@@ -2,20 +2,23 @@
   <PropertyGroup>
     <!-- Workaround while there is no SDK available that understands the TFM; suppress unsupported version errors. -->
     <NETCoreAppMaximumVersion>99.9</NETCoreAppMaximumVersion>
+
+    <UpdateAspNetCoreKnownFramework
+      Condition=" '$(UpdateAspNetCoreKnownFramework)' == '' ">true</UpdateAspNetCoreKnownFramework>
   </PropertyGroup>
 
+  <!-- Workaround when there is no vNext SDK available; copy known apphost/framework reference info from 5.0. -->
   <ItemGroup>
-    <!-- Workaround when there is no vNext SDK available; copy known apphost/framework reference info from 5.0. -->
     <KnownAppHostPack
       Include="@(KnownAppHostPack->WithMetadataValue('TargetFramework', 'netcoreapp5.0'))"
       TargetFramework="${KnownAppHostPackOrFrameworkReferenceTfm}"
-      Condition="@(KnownAppHostPack->Count()) != '0' AND !(@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '${KnownAppHostPackOrFrameworkReferenceTfm}')))"
-      />
+      Condition="@(KnownAppHostPack->Count()) != '0' AND
+        !(@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '${KnownAppHostPackOrFrameworkReferenceTfm}')))" />
     <KnownFrameworkReference
       Include="@(KnownFrameworkReference->WithMetadataValue('TargetFramework', 'netcoreapp5.0'))"
       TargetFramework="${KnownAppHostPackOrFrameworkReferenceTfm}"
-      Condition="@(KnownFrameworkReference->Count()) != '0' AND !(@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '${KnownAppHostPackOrFrameworkReferenceTfm}')))"
-      />
+      Condition="@(KnownFrameworkReference->Count()) != '0' AND
+        !(@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '${KnownAppHostPackOrFrameworkReferenceTfm}')))" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,19 +29,27 @@
       LatestRuntimeFrameworkVersion="${MicrosoftNETCoreAppRuntimeVersion}"
       TargetingPackVersion="${MicrosoftNETCoreAppRefPackageVersion}" />
 
-    <!-- Use the just-built ASP.NET Core shared framework. -->
+    <!-- Use the just-built ASP.NET Core shared framework if available. -->
     <KnownFrameworkReference
       Update="@(KnownFrameworkReference->WithMetadataValue('Identity', 'Microsoft.AspNetCore.App')->WithMetadataValue('TargetFramework', '${KnownAppHostPackOrFrameworkReferenceTfm}'))"
+      Condition=" $(UpdateAspNetCoreKnownFramework) AND
+        EXISTS('$(DOTNET_ROOT)\shared\Microsoft.AspNetCore.App\${MicrosoftAspNetCoreAppRuntimePackageVersion}') "
       DefaultRuntimeFrameworkVersion="${MicrosoftAspNetCoreAppRuntimePackageVersion}"
       LatestRuntimeFrameworkVersion="${MicrosoftAspNetCoreAppRuntimePackageVersion}"
       TargetingPackVersion="${MicrosoftAspNetCoreAppRefPackageVersion}"
       RuntimePackRuntimeIdentifiers="${SupportedRuntimeIdentifiers}" />
-  </ItemGroup>
 
-  <ItemGroup Condition="$(BuildingTestAppsIndependently) == 'false'">
     <PackageReference Include="Microsoft.Net.Compilers.Toolset"
       Version="${MicrosoftNetCompilersToolsetPackageVersion}"
       PrivateAssets="all"
       IsImplicitlyDefined="true" />
   </ItemGroup>
+
+  <!-- Warn if the "just-built" ASP.NET Core shared framework does not exist. -->
+  <Target Name="WarnAboutMissingSharedFramework"
+      BeforeTargets="Restore;Build;Rebuild;RunTests;Test;VSTest;Pack"
+      Condition=" $(UpdateAspNetCoreKnownFramework) AND
+        !EXISTS('$(DOTNET_ROOT)\shared\Microsoft.AspNetCore.App\${MicrosoftAspNetCoreAppRuntimePackageVersion}') ">
+    <Warning Text="Requested Microsoft.AspNetCore.App v${MicrosoftAspNetCoreAppRuntimePackageVersion} does not exist." />
+  </Target>
 </Project>
