@@ -402,7 +402,7 @@ The `darc-int-...` feeds in NuGet.config are used only when building internally 
 ### Common error: error MSB4019: The imported project "&hellip;\artifacts\bin\GenerateFiles\Directory.Build.props" was not found
 
 You have likely attempted to use `dotnet` to build a project in the repo without first generating the required files.
-Prior to building without `.\build.cmd` or `.\build.sh` at least the following **must** be executed:
+Prior to building without `.\build.cmd` or `./build.sh` at least the following **must** be executed:
 
 ```powershell
 .\build.cmd -noBuildNative -noBuildManaged
@@ -426,5 +426,5 @@ shared framework. Execute the following to ensure that exists within the `$(DOTN
 or
 
 ```bash
-.\build.sh --projects "$PWD/src/Framework/App.Runtime/src/Microsoft.AspNetCore.App.Runtime.csproj"
+./build.sh --projects "$PWD/src/Framework/App.Runtime/src/Microsoft.AspNetCore.App.Runtime.csproj"
 ```
